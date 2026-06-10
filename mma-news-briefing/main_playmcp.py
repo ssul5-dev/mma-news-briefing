@@ -113,9 +113,15 @@ def main():
     # 3. Fetch news using PlayMCP Naver Search tool
     print("[Info] Fetching latest '병무청' news via PlayMCP Naver Search...")
     try:
+        args_json = json.dumps({
+            "query": "병무청",
+            "display": 5,
+            "start": 1,
+            "sort": "date"
+        })
         result = subprocess.run([
             "mcporter", "call", "mcp-gateway.NaverSearch-search_news", 
-            "병무청", "5", "1", "date"
+            "--args", args_json
         ], capture_output=True, text=True, check=True, env=env, shell=False)
         
         news_data = json.loads(result.stdout)
@@ -188,9 +194,12 @@ def main():
     # 6. Send message using PlayMCP 나와의 채팅방 tool
     print("[Info] Sending message to KakaoTalk 나와의 채팅방...")
     try:
+        args_json = json.dumps({
+            "message": briefing_text
+        })
         result = subprocess.run([
             "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
-            "--message", briefing_text
+            "--args", args_json
         ], capture_output=True, text=True, check=True, env=env, shell=False)
         print("[Success] Briefing message delivered via PlayMCP.")
     except subprocess.CalledProcessError as e:

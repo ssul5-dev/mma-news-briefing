@@ -120,6 +120,11 @@ def main():
         
         news_data = json.loads(result.stdout)
         news_items = news_data.get("items", [])
+    except subprocess.CalledProcessError as e:
+        print(f"[Critical] Failed to call NaverSearch-search_news. Exit code: {e.returncode}")
+        print(f"Stdout: {e.stdout}")
+        print(f"Stderr: {e.stderr}")
+        exit(1)
     except Exception as e:
         print(f"[Critical] Failed to call NaverSearch-search_news: {e}")
         exit(1)
@@ -183,11 +188,16 @@ def main():
     # 6. Send message using PlayMCP 나와의 채팅방 tool
     print("[Info] Sending message to KakaoTalk 나와의 채팅방...")
     try:
-        subprocess.run([
+        result = subprocess.run([
             "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
             "--message", briefing_text
-        ], check=True, env=env, shell=False)
+        ], capture_output=True, text=True, check=True, env=env, shell=False)
         print("[Success] Briefing message delivered via PlayMCP.")
+    except subprocess.CalledProcessError as e:
+        print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat. Exit code: {e.returncode}")
+        print(f"Stdout: {e.stdout}")
+        print(f"Stderr: {e.stderr}")
+        exit(1)
     except Exception as e:
         print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat: {e}")
         exit(1)

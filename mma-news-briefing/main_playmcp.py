@@ -177,17 +177,42 @@ def main():
         prompt += f"제목: {art['title']}\n"
         prompt += f"본문: {art['content'][:2500]}\n"
         
-    try:
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt
-        )
-        briefing_text = response.text
-        if len(briefing_text) > 950:
-            briefing_text = briefing_text[:900] + "\n\n(이하 생략)"
-    except Exception as e:
-        print(f"[Critical] Gemini summarization failed: {e}")
+    import time
+    briefing_text = None
+    
+    # Try different models in case of temporary 503 or capacity issues
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
+    
+    for model_name in models_to_try:
+        print(f"[Info] Attempting summarization with model: {model_name}...")
+        for attempt in range(1, 4):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                briefing_text = response.text
+                if briefing_text:
+                    print(f"[Success] Summarization succeeded with model {model_name} on attempt {attempt}.")
+                    break
+            except Exception as e:
+                err_str = str(e)
+                if "503" in err_str or "UNAVAILABLE" in err_str:
+                    print(f"[Warning] Model {model_name} is temporarily unavailable (503). Retrying in {attempt * 3}s... (Attempt {attempt}/3)")
+                    time.sleep(attempt * 3)
+                else:
+                    print(f"[Warning] Failed with model {model_name}: {e}")
+                    break  # Break retry loop for non-503 errors (e.g. 404, 403)
+        
+        if briefing_text:
+            break
+            
+    if not briefing_text:
+        print("[Critical] Gemini summarization failed for all models.")
         exit(1)
+        
+    if len(briefing_text) > 950:
+        briefing_text = briefing_text[:900] + "\n\n(이하 생략)"
         
     print(f"[Info] Briefing generated (Length: {len(briefing_text)} chars):\n{briefing_text}")
     

@@ -167,8 +167,8 @@ def main():
         print("[Warning] No articles found for yesterday KST. Falling back to latest search results.")
         filtered_items = news_items
         
-    # Take up to 10 filtered items
-    selected_items = filtered_items[:10]
+    # Take up to 5 filtered items
+    selected_items = filtered_items[:5]
     print(f"[Info] Selected {len(selected_items)} articles for summarization.")
     
     # 4. Scrape full content of articles
@@ -198,12 +198,12 @@ def main():
 [작성 지침]
 1. 인사말: "📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다."로 시작해 주세요.
 2. 본문 작성:
-   - 최대 10개의 뉴스 기사에 대해, 각 기사당 단 1~2문장(권장: 1문장)의 극도로 짧고 명료한 구어체 요약(예: "~소식입니다", "~할 예정이라고 합니다")으로 작성해 주세요. 요약은 한 기사당 40자를 넘지 않도록 해야 합니다.
+   - 최대 5개의 뉴스 기사에 대해, 각 기사당 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다")으로 2~3문장의 명확한 요약 단락을 작성해 주세요.
    - 요약 단락 바로 다음 줄에 해당 기사의 링크(URL)만 그대로 정확히 출력해 주세요. '기사 보기:', '기사 링크:', 대괄호 '[]', '()' 등 어떠한 수식어구도 절대 붙이지 말고 순수한 URL만 단독으로 적어야 합니다.
    - 뉴스 요약과 링크 사이에는 줄바꿈을 하고, 각 기사 사이에는 빈 줄 하나를 두어 구분해 주세요.
    - 글머리 기호(•, -), 번호(1., 2.), 대괄호, 마크다운 볼드체(예: **텍스트**) 등은 절대 사용하지 마세요.
 3. 전체 분량 제한:
-   - 기사 링크(URL)들의 글자 수가 많기 때문에, 전체 요약 메시지 길이는 반드시 공백 및 URL을 모두 포함하여 총 950자 이하가 되도록 극도로 압축해 주세요. 1000자가 넘으면 카카오톡에서 메시지가 완전히 잘립니다.
+   - 전체 요약 메시지 길이는 반드시 공백 및 URL을 모두 포함하여 총 950자 이하가 되도록 작성해 주세요. 1000자가 넘으면 카카오톡에서 메시지가 완전히 잘립니다.
 
 [뉴스 데이터]
 """

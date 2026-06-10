@@ -104,7 +104,7 @@ def main():
     subprocess.run([
         "mcporter", "config", "add", "mcp-gateway", 
         "https://playmcp.kakao.com/mcp", "--auth", "oauth", "--scope", "home"
-    ], check=True, shell=True)
+    ], check=True, shell=False)
     
     # Bypass TLS verification for self-signed cert in corporate network
     env = os.environ.copy()
@@ -116,7 +116,7 @@ def main():
         result = subprocess.run([
             "mcporter", "call", "mcp-gateway.NaverSearch-search_news", 
             "병무청", "5", "1", "date"
-        ], capture_output=True, text=True, check=True, env=env, shell=True)
+        ], capture_output=True, text=True, check=True, env=env, shell=False)
         
         news_data = json.loads(result.stdout)
         news_items = news_data.get("items", [])
@@ -186,7 +186,7 @@ def main():
         subprocess.run([
             "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
             "--message", briefing_text
-        ], check=True, env=env, shell=True)
+        ], check=True, env=env, shell=False)
         print("[Success] Briefing message delivered via PlayMCP.")
     except Exception as e:
         print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat: {e}")
@@ -203,10 +203,10 @@ def main():
         
         if new_access and new_access != playmcp_access:
             print("[Info] Access Token refreshed. Syncing with GitHub Secrets...")
-            subprocess.run(["gh", "secret", "set", "PLAYMCP_ACCESS_TOKEN", "--body", new_access], shell=True)
+            subprocess.run(["gh", "secret", "set", "PLAYMCP_ACCESS_TOKEN", "--body", new_access], shell=False)
         if new_refresh and new_refresh != playmcp_refresh:
             print("[Info] Refresh Token refreshed. Syncing with GitHub Secrets...")
-            subprocess.run(["gh", "secret", "set", "PLAYMCP_REFRESH_TOKEN", "--body", new_refresh], shell=True)
+            subprocess.run(["gh", "secret", "set", "PLAYMCP_REFRESH_TOKEN", "--body", new_refresh], shell=False)
     except Exception as e:
         print(f"[Warning] Failed to sync updated tokens: {e}")
 

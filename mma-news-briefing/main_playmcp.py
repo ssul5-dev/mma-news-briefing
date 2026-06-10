@@ -2,7 +2,8 @@ import os
 import json
 import subprocess
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import email.utils
 from google import genai
 import re
 import html
@@ -53,6 +54,16 @@ def scrape_article_content(url):
     except Exception as e:
         print(f"[Warning] Scrape failed for {url}: {e}")
         return None
+
+def is_published_on_target_date(pub_date_str, target_date):
+    try:
+        dt = email.utils.parsedate_to_datetime(pub_date_str)
+        kst_tz = timezone(timedelta(hours=9))
+        dt_kst = dt.astimezone(kst_tz)
+        return dt_kst.date() == target_date
+    except Exception as e:
+        print(f"[Warning] Failed to parse pubDate {pub_date_str}: {e}")
+        return False
 
 def main():
     # 1. Load credentials
@@ -115,7 +126,7 @@ def main():
     try:
         args_json = json.dumps({
             "query": "병무청",
-            "display": 5,
+            "display": 50,
             "start": 1,
             "sort": "date"
         })
@@ -135,11 +146,34 @@ def main():
         print(f"[Critical] Failed to call NaverSearch-search_news: {e}")
         exit(1)
         
-    print(f"[Info] Found {len(news_items)} news items from search results.")
+    print(f"[Info] Found {len(news_items)} total raw news items from search results.")
+    
+    # Filter by target date (yesterday KST)
+    kst_tz = timezone(timedelta(hours=9))
+    now_kst = datetime.now(timezone.utc).astimezone(kst_tz)
+    target_date = (now_kst - timedelta(days=1)).date()
+    print(f"[Info] Target date for filtering news (Yesterday KST): {target_date}")
+    
+    filtered_items = []
+    for item in news_items:
+        pub_date_str = item.get("pubDate", "")
+        if is_published_on_target_date(pub_date_str, target_date):
+            filtered_items.append(item)
+            
+    print(f"[Info] Filtered {len(filtered_items)} items published on {target_date}.")
+    
+    # Fallback: if no items found for yesterday, use the latest search results
+    if not filtered_items:
+        print("[Warning] No articles found for yesterday KST. Falling back to latest search results.")
+        filtered_items = news_items
+        
+    # Take up to 15 items
+    selected_items = filtered_items[:15]
+    print(f"[Info] Selected {len(selected_items)} articles for summarization.")
     
     # 4. Scrape full content of articles
     processed_articles = []
-    for item in news_items:
+    for item in selected_items:
         title = clean_html_tags(item.get("title", ""))
         link = item.get("link", "")
         description = clean_html_tags(item.get("description", ""))
@@ -159,15 +193,15 @@ def main():
     print("[Info] Generating briefing text using Gemini...")
     client = genai.Client(api_key=gemini_key)
     prompt = """
-당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 병무청 관련 뉴스 데이터를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 격식 있고 자연스러운 대화체로 요약해서 작성해 주세요.
+당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 최대 15개의 병무청 관련 뉴스 데이터를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 자연스러운 대화체로 요약해서 작성해 주세요.
 
 [작성 지침]
-1. 인사말: "📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다."로 기분 좋게 시작해 주세요.
+1. 인사말: "📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다."로 시작해 주세요.
 2. 본문 작성:
-   - 딱딱한 글머리 기호(•)나 대괄호, 마크다운 볼드체(예: **텍스트**) 등은 가독성을 해치므로 절대 사용하지 마세요.
-   - 각 뉴스별 핵심 내용을 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다" 등)으로 연결해서 부드럽고 가독성 좋게 설명해 주세요.
-   - 뉴스 기사 간에는 한 줄을 띄워 문단을 깔끔하게 나누어 주세요.
-3. 메시지의 총 길이는 공백 포함 850자 이하가 되도록 군더더기 없이 간결하게 요약해 주세요.
+   - 각 뉴스당 정확히 한 줄의 아주 짧고 간결한 구어체 문장(30~40자 내외, 예: "~ 소식입니다.", "~할 예정이라고 합니다.")으로 요약해 주세요.
+   - 뉴스별로 한 줄씩 줄바꿈하여 나열해 주세요. (글머리 기호(•)나 번호는 쓰지 마세요.)
+   - 마크다운 볼드체(예: **텍스트**)는 절대 사용하지 마세요.
+3. 전체 메시지 길이 제한: 공백 포함 총 900자 이하가 되도록 극도로 짧고 간결하게 요약해야 합니다.
 4. 불필요한 뉴스 링크나 꼬리말은 모두 생략해 주세요.
 
 [뉴스 데이터]

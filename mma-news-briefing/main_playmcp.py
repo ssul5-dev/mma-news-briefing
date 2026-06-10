@@ -167,8 +167,8 @@ def main():
         print("[Warning] No articles found for yesterday KST. Falling back to latest search results.")
         filtered_items = news_items
         
-    # Take up to 15 items
-    selected_items = filtered_items[:15]
+    # Take all filtered items
+    selected_items = filtered_items
     print(f"[Info] Selected {len(selected_items)} articles for summarization.")
     
     # 4. Scrape full content of articles
@@ -193,22 +193,23 @@ def main():
     print("[Info] Generating briefing text using Gemini...")
     client = genai.Client(api_key=gemini_key)
     prompt = """
-당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 최대 15개의 병무청 관련 뉴스 데이터를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 자연스러운 대화체로 요약해서 작성해 주세요.
+당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 병무청 관련 뉴스 데이터를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 격식 있고 자연스러운 대화체로 요약해서 작성해 주세요.
 
 [작성 지침]
 1. 인사말: "📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다."로 시작해 주세요.
 2. 본문 작성:
-   - 각 뉴스당 정확히 한 줄의 아주 짧고 간결한 구어체 문장(30~40자 내외, 예: "~ 소식입니다.", "~할 예정이라고 합니다.")으로 요약해 주세요.
-   - 뉴스별로 한 줄씩 줄바꿈하여 나열해 주세요. (글머리 기호(•)나 번호는 쓰지 마세요.)
-   - 마크다운 볼드체(예: **텍스트**)는 절대 사용하지 마세요.
-3. 전체 메시지 길이 제한: 공백 포함 총 900자 이하가 되도록 극도로 짧고 간결하게 요약해야 합니다.
-4. 불필요한 뉴스 링크나 꼬리말은 모두 생략해 주세요.
+   - 각 기사에 대해 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다" 등)으로 3~4문장의 핵심 요약 단락을 작성해 주세요.
+   - 각 단락을 작성한 바로 다음 줄에 해당 기사의 링크를 그대로 정확히 출력해 주세요. (형식: "기사 보기: [해당 기사의 링크]")
+   - 뉴스 단락과 링크 사이, 그리고 기사 간에는 한 줄씩 띄워 깔끔하게 나누어 주세요.
+   - 글머리 기호(•)나 대괄호, 마크다운 볼드체(예: **텍스트**) 등은 절대 사용하지 마세요.
+3. 불필요한 뉴스 꼬리말은 모두 생략해 주세요.
 
 [뉴스 데이터]
 """
     for idx, art in enumerate(processed_articles, 1):
         prompt += f"\n---\n기사 {idx}:\n"
         prompt += f"제목: {art['title']}\n"
+        prompt += f"링크: {art['link']}\n"
         prompt += f"본문: {art['content'][:2500]}\n"
         
     import time
@@ -244,9 +245,6 @@ def main():
     if not briefing_text:
         print("[Critical] Gemini summarization failed for all models.")
         exit(1)
-        
-    if len(briefing_text) > 950:
-        briefing_text = briefing_text[:900] + "\n\n(이하 생략)"
         
     print(f"[Info] Briefing generated (Length: {len(briefing_text)} chars):\n{briefing_text}")
     

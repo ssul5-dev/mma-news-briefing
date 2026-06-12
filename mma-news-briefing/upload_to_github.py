@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def main():
-    token = os.getenv("GH_TOKEN", "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")
+    token = os.getenv("GH_TOKEN")
     repo = "ssul5-dev/mma-news-briefing"
     
     # Files mapping: remote path -> local path

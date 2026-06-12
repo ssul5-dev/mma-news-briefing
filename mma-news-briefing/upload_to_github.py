@@ -21,7 +21,7 @@ def main():
         "mma-news-briefing/configure_credentials.py": "mma-news-briefing/configure_credentials.py",
         "mma-news-briefing/작업지시서_병무청_뉴스_브리핑_자동화.md": "mma-news-briefing/작업지시서_병무청_뉴스_브리핑_자동화.md",
         "podcast/index.html": "mma-news-briefing/podcast/index.html",
-        "podcast/audio/latest.mp3": "mma-news-briefing/podcast/audio/latest.mp3",
+        "podcast/audio/latest.wav": "mma-news-briefing/podcast/audio/latest.wav",
         ".github/workflows/daily_briefing.yml": ".github/workflows/daily_briefing.yml"
     }
     

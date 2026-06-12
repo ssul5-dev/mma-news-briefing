@@ -43,3 +43,9 @@ jobs:
         GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
       run: |
         python mma-news-briefing/main_playmcp.py
+
+    - name: Upload Generated Audio and Web Player to GitHub
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+      run: |
+        python mma-news-briefing/upload_to_github.py

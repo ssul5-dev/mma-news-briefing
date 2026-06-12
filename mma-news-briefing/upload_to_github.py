@@ -32,11 +32,20 @@ def main():
     
     print("Starting file upload to GitHub...")
     for repo_path, local_path in files_to_upload.items():
-        if not os.path.exists(local_path):
-            print(f"[Warning] File not found locally: {local_path}")
-            continue
+        actual_local_path = local_path
+        if not os.path.exists(actual_local_path):
+            # Try fallback by stripping leading directory if in GitHub Actions runner
+            fallback_path = local_path
+            if fallback_path.startswith("mma-news-briefing/"):
+                fallback_path = fallback_path[len("mma-news-briefing/"):]
             
-        with open(local_path, "rb") as f:
+            if os.path.exists(fallback_path):
+                actual_local_path = fallback_path
+            else:
+                print(f"[Warning] File not found locally: {local_path} (Fallback: {fallback_path})")
+                continue
+            
+        with open(actual_local_path, "rb") as f:
             content_bytes = f.read()
         content_b64 = base64.b64encode(content_bytes).decode("utf-8")
         

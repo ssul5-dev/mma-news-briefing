@@ -2,9 +2,12 @@ import os
 import json
 import subprocess
 import hashlib
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 from datetime import datetime, timezone, timedelta
 import email.utils
 from google import genai
+from gtts import gTTS
 import re
 import html
 import requests
@@ -249,11 +252,39 @@ def main():
         
     print(f"[Info] Briefing generated (Length: {len(briefing_text)} chars):\n{briefing_text}")
     
-    # 6. Send message using PlayMCP 나와의 채팅방 tool
+    # 6. Generate TTS Audio file using gTTS
+    print("[Info] Generating TTS audio file using gTTS...")
+    try:
+        # Clean text for natural speech (remove emojis, clean URLs, merge multiple spaces/newlines)
+        speech_text = briefing_text.replace("📢", "").strip()
+        # Remove URL links
+        speech_text = re.sub(r'https?://\S+', '', speech_text)
+        # Collapse newlines/spaces
+        speech_text = re.sub(r'\s+', ' ', speech_text).strip()
+        
+        # Initialize gTTS
+        tts = gTTS(text=speech_text, lang='ko')
+        
+        # Ensure podcast/audio directory exists
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        podcast_audio_dir = os.path.join(base_dir, "podcast", "audio")
+        os.makedirs(podcast_audio_dir, exist_ok=True)
+        
+        audio_path = os.path.join(podcast_audio_dir, "latest.mp3")
+        tts.save(audio_path)
+        print(f"[Success] TTS audio file saved to {audio_path}")
+    except Exception as e:
+        print(f"[Warning] Failed to generate TTS audio: {e}")
+
+    # Append Podcast Web Player Link to KakaoTalk message
+    podcast_url = "https://ssul5-dev.github.io/mma-news-briefing/podcast/"
+    briefing_text_with_podcast = briefing_text + f"\n\n🎧 음성 브리핑 듣기:\n{podcast_url}"
+
+    # 7. Send message using PlayMCP 나와의 채팅방 tool
     print("[Info] Sending message to KakaoTalk 나와의 채팅방...")
     try:
         args_json = json.dumps({
-            "message": briefing_text
+            "message": briefing_text_with_podcast
         })
         result = subprocess.run([
             "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
@@ -269,7 +300,7 @@ def main():
         print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat: {e}")
         exit(1)
         
-    # 7. Check and update dynamically refreshed tokens
+    # 8. Check and update dynamically refreshed tokens
     try:
         with open(credentials_path, 'r', encoding='utf-8') as f:
             updated_cred = json.load(f)

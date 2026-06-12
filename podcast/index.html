@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 병무청 데일리 모닝톡 - 팟캐스트</title>
+  <meta name="description" content="매일 아침 배포되는 병무청 AI 뉴스 브리핑 데일리 음성 모닝톡 서비스입니다.">
+  
+  <!-- Font integration -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: rgba(22, 28, 37, 0.7);
+      --line: rgba(56, 68, 80, 0.4);
+      --text: #f4f7fb;
+      --muted: #8b9bb0;
+      --accent: #00e676;
+      --accent-glow: rgba(0, 230, 118, 0.4);
+      --secondary: #2196f3;
+      --shadow-color: rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      background: radial-gradient(circle at 50% 30%, #1a2332 0%, #0d1117 80%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .glass-container {
+      width: min(480px, 100%);
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 30px 24px;
+      box-shadow: 0 24px 60px var(--shadow-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    /* Header styling */
+    .header-badge {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      background: rgba(0, 230, 118, 0.1);
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      margin-bottom: 24px;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    /* Turntable LP vinyl styling */
+    .vinyl-wrapper {
+      position: relative;
+      margin-bottom: 30px;
+    }
+
+    .vinyl {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: 
+        radial-gradient(circle at center, #0d1117 0% 12%, #fff 12.5% 15%, transparent 16%),
+        radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.8) 35.5% 36%, transparent 36.5%),
+        radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, 0.8) 55.5% 56%, transparent 56.5%),
+        radial-gradient(circle at center, transparent 75%, rgba(0, 0, 0, 0.8) 75.5% 76%, transparent 76.5%),
+        conic-gradient(from 0deg, #1b222c, #0a0d13, #2a3545, #0a0d13, #1b222c);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 0 8px rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.5s ease-out;
+    }
+
+    /* Inner label of the vinyl disc */
+    .vinyl-label {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1b68ff 0%, #00e676 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 3px solid #0d1117;
+      text-align: center;
+      padding: 4px;
+      line-height: 1.2;
+    }
+
+    .vinyl.playing {
+      animation: spin 6s linear infinite;
+    }
+
+    /* Stylus needle representation */
+    .stylus {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 45px;
+      height: 90px;
+      transform-origin: 22px 10px;
+      transform: rotate(-30deg);
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .stylus.active {
+      transform: rotate(3deg);
+    }
+
+    .stylus-body {
+      width: 4px;
+      height: 70px;
+      background: #aab6c2;
+      margin-left: 20px;
+      border-radius: 2px;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .stylus-head {
+      width: 10px;
+      height: 16px;
+      background: #2b3947;
+      position: absolute;
+      bottom: -6px;
+      left: -3px;
+      border-radius: 2px;
+      transform: rotate(15deg);
+    }
+
+    .stylus-pivot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4f6173;
+      border: 3px solid #1a242f;
+      position: absolute;
+      top: 2px;
+      left: 14px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Metadata details */
+    .track-info {
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    .track-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .track-artist {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    /* Player controls wrapper */
+    .controls-wrapper {
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    /* Time slider styling */
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .time-label {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--muted);
+      min-width: 38px;
+    }
+
+    .progress-bar-slider {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-slider::-webkit-slider-runnable-track {
+      height: 6px;
+    }
+
+    .progress-bar-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: -407px 0 0 400px var(--accent);
+    }
+
+    /* Playback buttons */
+    .playback-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .btn-circle {
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+    }
+
+    .btn-circle:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--muted);
+    }
+
+    .btn-main {
+      width: 64px;
+      height: 64px;
+      background: var(--accent);
+      border: none;
+      color: #06130a;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 230, 118, 0.3);
+    }
+
+    .btn-main:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(0, 230, 118, 0.5);
+      background: #00ff82;
+    }
+
+    /* Secondary features (volume, speed) */
+    .audio-settings {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      gap: 16px;
+    }
+
+    .setting-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-icon {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .speed-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .volume-slider {
+      width: 70px;
+      height: 4px;
+      outline: none;
+      border-radius: 2px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text);
+      cursor: pointer;
+    }
+
+    /* Footer link */
+    .download-link {
+      margin-top: 24px;
+      font-size: 12px;
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .download-link:hover {
+      color: var(--accent);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 360px) {
+      .vinyl {
+        width: 180px;
+        height: 180px;
+      }
+      .vinyl-label {
+        width: 62px;
+        height: 62px;
+        font-size: 7px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glass-container">
+    <div class="header-badge">Daily Audio Briefing</div>
+    
+    <!-- LP Turntable section -->
+    <div class="vinyl-wrapper">
+      <div class="vinyl" id="vinyl-disc">
+        <div class="vinyl-label">AI 병무청<br>모닝톡</div>
+      </div>
+      
+      <!-- Stylus needle -->
+      <svg class="stylus" id="stylus-needle" viewBox="0 0 100 100">
+        <path d="M 22 10 L 22 75 L 18 85 M 22 10 L 38 12" fill="none" stroke="#aab6c2" stroke-width="4" stroke-linecap="round"/>
+        <rect x="13" y="80" width="10" height="15" rx="2" fill="#2b3947" transform="rotate(15, 18, 87)"/>
+        <circle cx="22" cy="10" r="7" fill="#4f6173" stroke="#1a242f" stroke-width="3"/>
+      </svg>
+    </div>
+
+    <!-- Metadata -->
+    <div class="track-info">
+      <div class="track-title" id="briefing-date">로딩 중...</div>
+      <div class="track-artist">병무청 일일 뉴스 음성 리포트</div>
+    </div>
+
+    <!-- Audio player element -->
+    <audio id="audio-player" src="audio/latest.mp3" preload="metadata"></audio>
+
+    <div class="controls-wrapper">
+      <!-- Timeline progress bar -->
+      <div class="progress-container">
+        <span class="time-label" id="current-time">0:00</span>
+        <input type="range" class="progress-bar-slider" id="progress-slider" min="0" max="100" value="0">
+        <span class="time-label" id="duration">0:00</span>
+      </div>
+
+      <!-- Main buttons -->
+      <div class="playback-buttons">
+        <button class="btn btn-circle" id="btn-rewind" title="10초 뒤로">⏪</button>
+        <button class="btn btn-circle btn-main" id="btn-play" title="재생">▶</button>
+        <button class="btn btn-circle" id="btn-forward" title="10초 앞으로">⏩</button>
+      </div>
+
+      <!-- Settings (volume, speed) -->
+      <div class="audio-settings">
+        <div class="setting-group">
+          <span class="setting-icon">🔊</span>
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.8">
+        </div>
+        <div class="setting-group">
+          <span class="setting-icon">⚡</span>
+          <select class="speed-select" id="speed-select" title="재생 속도">
+            <option value="0.75">0.75x</option>
+            <option value="1.0" selected>1.0x (보통)</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2.0">2.0x</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <a href="audio/latest.mp3" class="download-link" id="btn-download" download="병무청_뉴스브리핑_최신본.mp3">
+      <span>📥 파일 직접 다운로드</span>
+    </a>
+  </div>
+
+  <script>
+    const audio = document.getElementById('audio-player');
+    const playBtn = document.getElementById('btn-play');
+    const rewindBtn = document.getElementById('btn-rewind');
+    const forwardBtn = document.getElementById('btn-forward');
+    const progressSlider = document.getElementById('progress-slider');
+    const volumeSlider = document.getElementById('volume-slider');
+    const speedSelect = document.getElementById('speed-select');
+    const currentTimeLabel = document.getElementById('current-time');
+    const durationLabel = document.getElementById('duration');
+    const dateLabel = document.getElementById('briefing-date');
+    
+    const vinyl = document.getElementById('vinyl-disc');
+    const stylus = document.getElementById('stylus-needle');
+
+    // Dynamic date display helper
+    function updateDateDisplay() {
+      const today = new Date();
+      // Set to Yesterday since the briefing reports yesterday's news
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      
+      const year = yesterday.getFullYear();
+      const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+      const day = String(yesterday.getDate()).padStart(2, '0');
+      
+      dateLabel.textContent = `${year}년 ${month}월 ${day}일 브리핑`;
+    }
+    
+    updateDateDisplay();
+
+    // Utility: Format seconds to M:SS
+    function formatTime(secs) {
+      if (isNaN(secs)) return '0:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Load Metadata
+    audio.addEventListener('loadedmetadata', () => {
+      durationLabel.textContent = formatTime(audio.duration);
+      progressSlider.max = Math.floor(audio.duration);
+    });
+
+    // Handle audio time update
+    audio.addEventListener('timeupdate', () => {
+      if (!isSliderDragging) {
+        progressSlider.value = Math.floor(audio.currentTime);
+        currentTimeLabel.textContent = formatTime(audio.currentTime);
+      }
+    });
+
+    // Handle end of playback
+    audio.addEventListener('ended', () => {
+      playBtn.textContent = '▶';
+      vinyl.classList.remove('playing');
+      stylus.classList.remove('active');
+    });
+
+    // Toggle Play / Pause
+    let isPlaying = false;
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play().then(() => {
+          playBtn.textContent = '⏸';
+          vinyl.classList.add('playing');
+          stylus.classList.add('active');
+        }).catch(err => console.log("Play failed: ", err));
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶';
+        vinyl.classList.remove('playing');
+        stylus.classList.remove('active');
+      }
+    });
+
+    // Drag timeline logic
+    let isSliderDragging = false;
+    progressSlider.addEventListener('input', () => {
+      isSliderDragging = true;
+      currentTimeLabel.textContent = formatTime(progressSlider.value);
+    });
+
+    progressSlider.addEventListener('change', () => {
+      audio.currentTime = progressSlider.value;
+      isSliderDragging = false;
+    });
+
+    // Rewind / Forward (10 seconds)
+    rewindBtn.addEventListener('click', () => {
+      audio.currentTime = Math.max(0, audio.currentTime - 10);
+    });
+
+    forwardBtn.addEventListener('click', () => {
+      audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+    });
+
+    // Volume Adjustment
+    volumeSlider.addEventListener('input', () => {
+      audio.volume = volumeSlider.value;
+    });
+
+    // Playback Speed Adjustment
+    speedSelect.addEventListener('change', () => {
+      audio.playbackRate = parseFloat(speedSelect.value);
+    });
+  </script>
+</body>
+</html>

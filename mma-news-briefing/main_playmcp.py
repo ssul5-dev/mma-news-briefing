@@ -305,9 +305,16 @@ def main():
             os.makedirs(podcast_audio_dir, exist_ok=True)
             
             audio_path = os.path.join(podcast_audio_dir, "latest.wav")
-            with open(audio_path, "wb") as f:
-                f.write(audio_data)
-            print(f"[Success] TTS audio file saved to {audio_path}")
+            
+            # Convert raw 16-bit 24kHz mono PCM to standard RIFF WAV
+            import wave
+            with wave.open(audio_path, 'wb') as wav_file:
+                wav_file.setnchannels(1)       # Mono
+                wav_file.setsampwidth(2)      # 16-bit (2 bytes)
+                wav_file.setframerate(24000)  # 24kHz
+                wav_file.writeframes(audio_data)
+                
+            print(f"[Success] Standard WAV file generated and saved to {audio_path}")
         else:
             print("[Warning] No audio data returned from Gemini TTS API.")
     except Exception as e:

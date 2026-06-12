@@ -402,7 +402,7 @@
     </div>
 
     <!-- Audio player element -->
-    <audio id="audio-player" src="audio/latest.wav" preload="metadata"></audio>
+    <audio id="audio-player" src="audio/latest.wav" preload="auto"></audio>
 
     <div class="controls-wrapper">
       <!-- Timeline progress bar -->
@@ -482,11 +482,23 @@
       return `${m}:${s}`;
     }
 
-    // Load Metadata
-    audio.addEventListener('loadedmetadata', () => {
-      durationLabel.textContent = formatTime(audio.duration);
-      progressSlider.max = Math.floor(audio.duration);
-    });
+    // Update duration info helper
+    function updateDuration() {
+      if (audio.duration && !isNaN(audio.duration)) {
+        durationLabel.textContent = formatTime(audio.duration);
+        progressSlider.max = Math.floor(audio.duration);
+      }
+    }
+
+    // Load Metadata and duration change events
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('durationchange', updateDuration);
+    audio.addEventListener('canplaythrough', updateDuration);
+
+    // Initial check in case it's already loaded
+    if (audio.readyState >= 1) {
+      updateDuration();
+    }
 
     // Handle audio time update
     audio.addEventListener('timeupdate', () => {

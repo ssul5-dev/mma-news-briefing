@@ -7,7 +7,6 @@ ssl._create_default_https_context = ssl._create_unverified_context
 from datetime import datetime, timezone, timedelta
 import email.utils
 from google import genai
-from gtts import gTTS
 import re
 import html
 import requests
@@ -194,7 +193,21 @@ def main():
         
     # 5. Summarize using Gemini API
     print("[Info] Generating briefing text using Gemini...")
-    client = genai.Client(api_key=gemini_key)
+    
+    # Create an unverified SSL context for enterprise network proxies
+    unverified_ssl_context = ssl.create_default_context()
+    unverified_ssl_context.check_hostname = False
+    unverified_ssl_context.verify_mode = ssl.CERT_NONE
+    
+    from google.genai import types
+    client = genai.Client(
+        api_key=gemini_key,
+        http_options=types.HttpOptions(
+            api_version='v1beta',
+            client_args={'verify': unverified_ssl_context},
+            async_client_args={'verify': unverified_ssl_context}
+        )
+    )
     prompt = """
 당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 병무청 관련 뉴스 데이터를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 자연스러운 대화체로 요약해서 작성해 주세요.
 
@@ -252,8 +265,8 @@ def main():
         
     print(f"[Info] Briefing generated (Length: {len(briefing_text)} chars):\n{briefing_text}")
     
-    # 6. Generate TTS Audio file using gTTS
-    print("[Info] Generating TTS audio file using gTTS...")
+    # 6. Generate TTS Audio file using Gemini 3.1 Flash TTS
+    print("[Info] Generating TTS audio file using Gemini 3.1 Flash TTS...")
     try:
         # Clean text for natural speech (remove emojis, clean URLs, merge multiple spaces/newlines)
         speech_text = briefing_text.replace("📢", "").strip()
@@ -262,17 +275,41 @@ def main():
         # Collapse newlines/spaces
         speech_text = re.sub(r'\s+', ' ', speech_text).strip()
         
-        # Initialize gTTS
-        tts = gTTS(text=speech_text, lang='ko')
+        # Call Gemini 3.1 Flash TTS API
+        response_audio = client.models.generate_content(
+            model="gemini-3.1-flash-tts-preview",
+            contents=speech_text,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name="Aoede"  # Aoede, Puck, Charon, Fenrir, Kore
+                        )
+                    )
+                )
+            )
+        )
         
-        # Ensure podcast/audio directory exists
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        podcast_audio_dir = os.path.join(base_dir, "podcast", "audio")
-        os.makedirs(podcast_audio_dir, exist_ok=True)
+        audio_data = None
+        for candidate in response_audio.candidates:
+            for part in candidate.content.parts:
+                if part.inline_data:
+                    audio_data = part.inline_data.data
+                    break
         
-        audio_path = os.path.join(podcast_audio_dir, "latest.mp3")
-        tts.save(audio_path)
-        print(f"[Success] TTS audio file saved to {audio_path}")
+        if audio_data:
+            # Ensure podcast/audio directory exists
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            podcast_audio_dir = os.path.join(base_dir, "podcast", "audio")
+            os.makedirs(podcast_audio_dir, exist_ok=True)
+            
+            audio_path = os.path.join(podcast_audio_dir, "latest.wav")
+            with open(audio_path, "wb") as f:
+                f.write(audio_data)
+            print(f"[Success] TTS audio file saved to {audio_path}")
+        else:
+            print("[Warning] No audio data returned from Gemini TTS API.")
     except Exception as e:
         print(f"[Warning] Failed to generate TTS audio: {e}")
 

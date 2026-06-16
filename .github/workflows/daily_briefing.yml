@@ -1,11 +1,12 @@
 name: Daily MMA News AI Briefing (PlayMCP)
 
 on:
-  schedule:
-    - cron: '0 22 * * *'  # 매일 한국 시간(KST) 오전 7시 (UTC 22:00)
   repository_dispatch:
     types: [daily-briefing]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   run-pipeline:

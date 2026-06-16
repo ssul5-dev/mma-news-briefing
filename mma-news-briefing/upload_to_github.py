@@ -20,6 +20,7 @@ def main():
         "mma-news-briefing/test_scraper.py": "mma-news-briefing/test_scraper.py",
         "mma-news-briefing/configure_credentials.py": "mma-news-briefing/configure_credentials.py",
         "mma-news-briefing/작업지시서_병무청_뉴스_브리핑_자동화.md": "mma-news-briefing/작업지시서_병무청_뉴스_브리핑_자동화.md",
+        "mma-news-briefing/update_gh_pat.ps1": "mma-news-briefing/update_gh_pat.ps1",
         "podcast/index.html": "mma-news-briefing/podcast/index.html",
         "podcast/audio/latest.wav": "mma-news-briefing/podcast/audio/latest.wav",
         ".github/workflows/daily_briefing.yml": ".github/workflows/daily_briefing.yml"

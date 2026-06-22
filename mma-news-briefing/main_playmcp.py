@@ -169,8 +169,8 @@ def main():
         print("[Warning] No articles found for yesterday KST. Falling back to latest search results.")
         filtered_items = news_items
         
-    # Take up to 5 filtered items
-    selected_items = filtered_items[:5]
+    # Take up to 15 filtered items
+    selected_items = filtered_items[:15]
     print(f"[Info] Selected {len(selected_items)} articles for summarization.")
     
     # 4. Scrape full content of articles
@@ -214,12 +214,11 @@ def main():
 [작성 지침]
 1. 인사말: "📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다."로 시작해 주세요.
 2. 본문 작성:
-   - 최대 5개의 뉴스 기사에 대해, 각 기사당 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다")으로 2~3문장의 명확한 요약 단락을 작성해 주세요.
+   - 제공된 뉴스 데이터 중 병무 행정, 정책 변화, 입영 소식 등 중요도가 높고 실용적인 뉴스를 우선순위로 하여 최대 10개의 핵심 뉴스를 선별해 주세요. 선별한 뉴스는 가장 중요한 순서대로 정렬해야 합니다.
+   - 각 뉴스마다 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다")으로 2~3문장의 명확한 요약 단락을 작성해 주세요.
    - 요약 단락 바로 다음 줄에 해당 기사의 링크(URL)만 그대로 정확히 출력해 주세요. '기사 보기:', '기사 링크:', 대괄호 '[]', '()' 등 어떠한 수식어구도 절대 붙이지 말고 순수한 URL만 단독으로 적어야 합니다.
    - 뉴스 요약과 링크 사이에는 줄바꿈을 하고, 각 기사 사이에는 빈 줄 하나를 두어 구분해 주세요.
    - 글머리 기호(•, -), 번호(1., 2.), 대괄호, 마크다운 볼드체(예: **텍스트**) 등은 절대 사용하지 마세요.
-3. 전체 분량 제한:
-   - 전체 요약 메시지 길이는 반드시 공백 및 URL을 모두 포함하여 총 950자 이하가 되도록 작성해 주세요. 1000자가 넘으면 카카오톡에서 메시지가 완전히 잘립니다.
 
 [뉴스 데이터]
 """
@@ -320,29 +319,73 @@ def main():
     except Exception as e:
         print(f"[Warning] Failed to generate TTS audio: {e}")
 
-    # Append Podcast Web Player Link to KakaoTalk message
+    # Append Podcast Web Player Link to the KakaoTalk message sequence
     podcast_url = "https://ssul5-dev.github.io/mma-news-briefing/podcast/"
-    briefing_text_with_podcast = briefing_text + f"\n\n🎧 음성 브리핑 듣기:\n{podcast_url}"
+    
+    # 7. Split briefing text and send multiple messages to KakaoTalk
+    print("[Info] Splitting briefing text and sending messages to KakaoTalk...")
+    
+    # Split the text by paragraphs. In our format, each article section is separated by double newlines.
+    raw_paragraphs = briefing_text.strip().split("\n\n")
+    
+    message_chunks = []
+    current_chunk = ""
+    
+    # Extract introductory greeting if present
+    greeting = ""
+    if raw_paragraphs and "안녕하세요" in raw_paragraphs[0]:
+        greeting = raw_paragraphs[0]
+        raw_paragraphs = raw_paragraphs[1:]
+        
+    for para in raw_paragraphs:
+        # Check if adding this paragraph (and greeting if chunk is empty) fits the limit
+        test_chunk = current_chunk
+        if not test_chunk and greeting:
+            test_chunk = greeting + "\n\n"
+            
+        test_chunk += para + "\n\n"
+        
+        # Keep accumulating if within safe character limits
+        if len(test_chunk) < 900:
+            if not current_chunk and greeting:
+                current_chunk = greeting + "\n\n"
+            current_chunk += para + "\n\n"
+        else:
+            # Chunk is full, save current_chunk
+            if current_chunk:
+                message_chunks.append(current_chunk.strip())
+            # Start new chunk with the current paragraph
+            current_chunk = para + "\n\n"
+            
+    if current_chunk:
+        message_chunks.append(current_chunk.strip())
+        
+    # Append Podcast Link to the final chunk
+    if message_chunks:
+        message_chunks[-1] += f"\n\n🎧 음성 브리핑 듣기:\n{podcast_url}"
+    else:
+        message_chunks = [f"📢 안녕하세요! 오늘의 병무청 뉴스 브리핑입니다.\n\n🎧 음성 브리핑 듣기:\n{podcast_url}"]
 
-    # 7. Send message using PlayMCP 나와의 채팅방 tool
-    print("[Info] Sending message to KakaoTalk 나와의 채팅방...")
-    try:
-        args_json = json.dumps({
-            "message": briefing_text_with_podcast
-        })
-        result = subprocess.run([
-            "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
-            "--args", args_json
-        ], capture_output=True, text=True, check=True, env=env, shell=False)
-        print("[Success] Briefing message delivered via PlayMCP.")
-    except subprocess.CalledProcessError as e:
-        print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat. Exit code: {e.returncode}")
-        print(f"Stdout: {e.stdout}")
-        print(f"Stderr: {e.stderr}")
-        exit(1)
-    except Exception as e:
-        print(f"[Critical] Failed to send message via KakaotalkChat-MemoChat: {e}")
-        exit(1)
+    # Send each chunk sequentially
+    for idx, chunk in enumerate(message_chunks, 1):
+        print(f"[Info] Sending chunk {idx}/{len(message_chunks)} (Length: {len(chunk)} chars)...")
+        try:
+            args_json = json.dumps({
+                "message": chunk
+            })
+            result = subprocess.run([
+                "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
+                "--args", args_json
+            ], capture_output=True, text=True, check=True, env=env, shell=False)
+            print(f"[Success] Chunk {idx} delivered via PlayMCP.")
+        except subprocess.CalledProcessError as e:
+            print(f"[Critical] Failed to send chunk {idx} via KakaotalkChat-MemoChat. Exit code: {e.returncode}")
+            print(f"Stdout: {e.stdout}")
+            print(f"Stderr: {e.stderr}")
+            exit(1)
+        except Exception as e:
+            print(f"[Critical] Failed to send chunk {idx} via KakaotalkChat-MemoChat: {e}")
+            exit(1)
         
     # 8. Check and update dynamically refreshed tokens
     try:

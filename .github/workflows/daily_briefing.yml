@@ -45,7 +45,7 @@ jobs:
         # GitHub CLI utilizes GH_TOKEN to update repository secrets
         GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
       run: |
-        python mma-news-briefing/test_keywords_playmcp.py
+        python mma-news-briefing/main_playmcp.py
 
     - name: Upload Generated Audio and Web Player to GitHub
       env:

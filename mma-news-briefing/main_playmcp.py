@@ -232,7 +232,7 @@ def main():
     briefing_text = None
     
     # Try different models in case of temporary 503 or capacity issues
-    models_to_try = ['gemini-3.1-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash']
+    models_to_try = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
     
     for model_name in models_to_try:
         print(f"[Info] Attempting summarization with model: {model_name}...")
@@ -266,58 +266,66 @@ def main():
     
     # 6. Generate TTS Audio file using Gemini 3.1 Flash TTS
     print("[Info] Generating TTS audio file using Gemini 3.1 Flash TTS...")
-    try:
-        # Clean text for natural speech (remove emojis, clean URLs, merge multiple spaces/newlines)
-        speech_text = briefing_text.replace("📢", "").strip()
-        # Remove URL links
-        speech_text = re.sub(r'https?://\S+', '', speech_text)
-        # Collapse newlines/spaces
-        speech_text = re.sub(r'\s+', ' ', speech_text).strip()
-        
-        # Call Gemini 3.1 Flash TTS API
-        response_audio = client.models.generate_content(
-            model="gemini-3.1-flash-tts-preview",
-            contents=speech_text,
-            config=types.GenerateContentConfig(
-                response_modalities=["AUDIO"],
-                speech_config=types.SpeechConfig(
-                    voice_config=types.VoiceConfig(
-                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                            voice_name="Aoede"  # Aoede, Puck, Charon, Fenrir, Kore
+    for attempt in range(1, 4):
+        try:
+            # Clean text for natural speech (remove emojis, clean URLs, merge multiple spaces/newlines)
+            speech_text = briefing_text.replace("📢", "").strip()
+            # Remove URL links
+            speech_text = re.sub(r'https?://\S+', '', speech_text)
+            # Collapse newlines/spaces
+            speech_text = re.sub(r'\s+', ' ', speech_text).strip()
+            
+            # Call Gemini 3.1 Flash TTS API
+            response_audio = client.models.generate_content(
+                model="gemini-3.1-flash-tts-preview",
+                contents=speech_text,
+                config=types.GenerateContentConfig(
+                    response_modalities=["AUDIO"],
+                    speech_config=types.SpeechConfig(
+                        voice_config=types.VoiceConfig(
+                            prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                voice_name="Aoede"  # Aoede, Puck, Charon, Fenrir, Kore
+                            )
                         )
                     )
                 )
             )
-        )
-        
-        audio_data = None
-        for candidate in response_audio.candidates:
-            for part in candidate.content.parts:
-                if part.inline_data:
-                    audio_data = part.inline_data.data
-                    break
-        
-        if audio_data:
-            # Ensure podcast/audio directory exists
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            podcast_audio_dir = os.path.join(base_dir, "podcast", "audio")
-            os.makedirs(podcast_audio_dir, exist_ok=True)
             
-            audio_path = os.path.join(podcast_audio_dir, "latest.wav")
+            audio_data = None
+            for candidate in response_audio.candidates:
+                for part in candidate.content.parts:
+                    if part.inline_data:
+                        audio_data = part.inline_data.data
+                        break
             
-            # Convert raw 16-bit 24kHz mono PCM to standard RIFF WAV
-            import wave
-            with wave.open(audio_path, 'wb') as wav_file:
-                wav_file.setnchannels(1)       # Mono
-                wav_file.setsampwidth(2)      # 16-bit (2 bytes)
-                wav_file.setframerate(24000)  # 24kHz
-                wav_file.writeframes(audio_data)
+            if audio_data:
+                # Ensure podcast/audio directory exists
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                podcast_audio_dir = os.path.join(base_dir, "podcast", "audio")
+                os.makedirs(podcast_audio_dir, exist_ok=True)
                 
-            print(f"[Success] Standard WAV file generated and saved to {audio_path}")
-        else:
-            print("[Warning] No audio data returned from Gemini TTS API.")
-    except Exception as e:
-        print(f"[Warning] Failed to generate TTS audio: {e}")
+                audio_path = os.path.join(podcast_audio_dir, "latest.wav")
+                
+                # Convert raw 16-bit 24kHz mono PCM to standard RIFF WAV
+                import wave
+                with wave.open(audio_path, 'wb') as wav_file:
+                    wav_file.setnchannels(1)       # Mono
+                    wav_file.setsampwidth(2)      # 16-bit (2 bytes)
+                    wav_file.setframerate(24000)  # 24kHz
+                    wav_file.writeframes(audio_data)
+                    
+                print(f"[Success] Standard WAV file generated and saved to {audio_path}")
+                break
+            else:
+                print("[Warning] No audio data returned from Gemini TTS API.")
+        except Exception as e:
+            err_str = str(e)
+            if "503" in err_str or "UNAVAILABLE" in err_str:
+                print(f"[Warning] Gemini TTS 3.1 is temporarily unavailable (503). Retrying in {attempt * 3}s... (Attempt {attempt}/3)")
+                time.sleep(attempt * 3)
+            else:
+                print(f"[Warning] Failed to generate TTS audio: {e}")
+                break
 
     # Append Podcast Web Player Link to the KakaoTalk message sequence
     podcast_url = "https://ssul5-dev.github.io/mma-news-briefing/podcast/"

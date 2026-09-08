@@ -232,7 +232,7 @@ def main():
     briefing_text = None
     
     # Try different models in case of temporary 503 or capacity issues
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-3.5-flash']
+    models_to_try = ['gemini-3.1-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash']
     
     for model_name in models_to_try:
         print(f"[Info] Attempting summarization with model: {model_name}...")

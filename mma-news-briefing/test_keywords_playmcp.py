@@ -125,8 +125,8 @@ def main():
     env = os.environ.copy()
     env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
     
-    # 3. Fetch news for specified keywords: 전역증, 병적기록표, 대체역, 대체복무요원, 대체역심사위원회
-    keywords = ["전역증", "병적기록표", "대체역", "대체복무요원", "대체역심사위원회"]
+    # 3. Fetch news for specified keywords: 전역증, 병적기록표, 병적증명서
+    keywords = ["전역증", "병적기록표", "병적증명서"]
     all_news_items = []
     seen_links = set()
     
@@ -188,7 +188,7 @@ def main():
         })
         
     # 5. Summarize using Gemini API
-    print("[Info] Generating test briefing text using Gemini...")
+    print("[Info] Generating briefing text using Gemini...")
     
     unverified_ssl_context = ssl.create_default_context()
     unverified_ssl_context.check_hostname = False
@@ -205,10 +205,10 @@ def main():
     )
     
     prompt = """
-당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 병무/대체역 관련 뉴스 데이터(전역증, 병적기록표, 대체역, 대체복무요원, 대체역심사위원회 등)를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 자연스러운 대화체로 요약해서 작성해 주세요.
+당신은 친절하고 전문적인 AI 뉴스 아나운서입니다. 아래 수집된 뉴스 데이터(전역증, 병적기록표, 병적증명서 관련)를 바탕으로, 모바일 카카오톡 메시지용 브리핑을 자연스러운 대화체로 요약해서 작성해 주세요.
 
 [작성 지침]
-1. 인사말: "📢 [테스트] 안녕하세요! 요청하신 병무/대체역 주요 키워드 뉴스 요약 브리핑입니다."로 시작해 주세요.
+1. 인사말: "📢 안녕하세요! 병무 주요 키워드 [전역증, 병적기록표, 병적증명서] 뉴스 브리핑입니다."로 정확히 시작해 주세요. (주의: '테스트'라는 단어는 절대 넣지 마세요.)
 2. 본문 작성:
    - 수집된 기사 중 중요한 소식을 우선으로 하여 최대 10개의 핵심 뉴스를 선별해 작성해 주세요.
    - 각 뉴스마다 자연스러운 구어체 대화 형식(예: "~소식입니다", "~할 예정이라고 합니다")으로 2~3문장의 명확한 요약 단락을 작성해 주세요.

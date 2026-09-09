@@ -301,7 +301,7 @@ def main():
                 "mcporter", "call", "mcp-gateway.KakaotalkChat-MemoChat", 
                 "--args", args_json
             ], capture_output=True, text=True, check=True, env=env, shell=False)
-            print(f"[Success] Chunk {idx} delivered via PlayMCP.")
+            print(f"[Success] Chunk {idx} delivered via PlayMCP. Response: {result.stdout.strip()}")
         except subprocess.CalledProcessError as e:
             print(f"[Critical] Failed to send chunk {idx}: {e.returncode}\n{e.stdout}\n{e.stderr}")
             exit(1)
